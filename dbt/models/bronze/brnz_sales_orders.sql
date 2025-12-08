@@ -1,49 +1,86 @@
+{{
+    config(
+        materialized='view',
+        tags=['bronze', 'sales']
+    )
+}}
+
+/*
+    Bronze layer for Sales Orders
+    
+    This model combines sales order headers with line items.
+    - Standardizes column names
+    - Handles NULL values in optional fields
+    - Converts data types appropriately
+    - Adds audit columns
+*/
+
 with sales_order_header as (
     select
-        SalesOrderID as sales_order_id,
-        OrderDate as order_date,
-        DueDate as due_date,
-        ShipDate as ship_date,
-        Status as status,
-        OnlineOrderFlag as online_order_flag,
-        SalesOrderNumber as sales_order_number,
-        PurchaseOrderNumber as purchase_order_number,
-        CustomerID as customer_id,
-        SalesPersonID as sales_person_id,
-        TerritoryID as territory_id
+        SalesOrderID,
+        OrderDate,
+        DueDate,
+        ShipDate,
+        Status,
+        OnlineOrderFlag,
+        SalesOrderNumber,
+        PurchaseOrderNumber,
+        CustomerID,
+        SalesPersonID,
+        TerritoryID,
+        ShipMethodID,
+        CreditCardID,
+        CurrencyRateID,
+        SubTotal,
+        TaxAmt,
+        Freight,
+        TotalDue,
+        ModifiedDate
     from {{ source('adventureworks', 'SalesOrderHeader') }}
 ),
 
 sales_order_detail as (
     select
-        SalesOrderDetailID as order_detail_id,
-        SalesOrderID as sales_order_id,
-        ProductID as product_id,
-        OrderQty as order_qty,
-        UnitPrice as unit_price,
-        UnitPriceDiscount as unit_price_discount,
-        LineTotal as line_total
+        SalesOrderDetailID,
+        SalesOrderID,
+        ProductID,
+        OrderQty,
+        UnitPrice,
+        UnitPriceDiscount,
+        LineTotal,
+        ModifiedDate
     from {{ source('adventureworks', 'SalesOrderDetail') }}
+),
+
+final as (
+    select
+        h.SalesOrderID as sales_order_id,
+        cast(h.OrderDate as date) as order_date,
+        cast(h.DueDate as date) as due_date,
+        cast(h.ShipDate as date) as ship_date,
+        h.Status as order_status,
+        h.OnlineOrderFlag as is_online_order,
+        h.SalesOrderNumber as order_number,
+        coalesce(h.PurchaseOrderNumber, 'NONE') as purchase_order_number,
+        h.CustomerID as customer_id,
+        coalesce(h.SalesPersonID, 0) as sales_person_id,
+        coalesce(h.TerritoryID, 0) as territory_id,
+        coalesce(h.ShipMethodID, 0) as ship_method_id,
+        d.SalesOrderDetailID as order_detail_id,
+        d.ProductID as product_id,
+        d.OrderQty as order_quantity,
+        d.UnitPrice as unit_price,
+        d.UnitPriceDiscount as unit_price_discount,
+        d.LineTotal as line_total,
+        cast(h.SubTotal as decimal(12, 2)) as order_subtotal,
+        cast(h.TaxAmt as decimal(12, 2)) as tax_amount,
+        cast(h.Freight as decimal(12, 2)) as freight_amount,
+        cast(h.TotalDue as decimal(12, 2)) as order_total,
+        cast(h.ModifiedDate as date) as last_modified_date,
+        CURRENT_TIMESTAMP as dbt_load_timestamp
+    from sales_order_header h
+    left join sales_order_detail d
+        on h.SalesOrderID = d.SalesOrderID
 )
 
-select
-    h.sales_order_id,
-    h.order_date,
-    h.due_date,
-    h.ship_date,
-    h.status,
-    h.online_order_flag,
-    h.sales_order_number,
-    h.purchase_order_number,
-    h.customer_id,
-    h.sales_person_id,
-    h.territory_id,
-    d.order_detail_id,
-    d.product_id,
-    d.order_qty,
-    d.unit_price,
-    d.unit_price_discount,
-    d.line_total
-from sales_order_header h
-left join sales_order_detail d
-    on h.sales_order_id = d.sales_order_id 
+select * from final
