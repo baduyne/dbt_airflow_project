@@ -417,5 +417,6 @@ Common issues and solutions:
 For additional support:
 - Check the project issues
 - Contact the development team
-- Refer to DBT and Airflow documentation #   d b t _ a i r f l o w _ p r o j e c t  
+- Refer to DBT and Airflow documentation #   d b t _ a i r f l o w _ p r o j e c t 
+ 
  
