@@ -345,26 +345,7 @@ jobs:
           python-version: '3.9'
 
       - name: Install SQLFluff
-        run: |
-          pip install sqlfluff sqlfluff-templater-dbt
-
-      - name: Lint SQL files
-        run: |
-          cd dbt
-          sqlfluff lint models/ --dialect tsql || true
-        continue-on-error: true
-
-  lint-python:
-    name: Lint Python Files
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
+         with:
           python-version: '3.9'
 
       - name: Install flake8
@@ -448,7 +429,26 @@ jobs:
             dbt/target/catalog.json
             dbt/target/manifest.json
             dbt/target/index.html
-          retention-days: 30
+          retention-days: 30  run: |
+          pip install sqlfluff sqlfluff-templater-dbt
+
+      - name: Lint SQL files
+        run: |
+          cd dbt
+          sqlfluff lint models/ --dialect tsql || true
+        continue-on-error: true
+
+  lint-python:
+    name: Lint Python Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
 ```
 
 **Step 2:** Commit and push the workflow
