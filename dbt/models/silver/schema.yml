@@ -20,8 +20,19 @@ models:
               to: ref('brnz_products')
               field: product_id
       - name: gross_amount
-        tests: 
+        tests:
           - not_null
+      - name: line_total
+        description: "Total for this line item (quantity * unit_price * (1 - discount))"
+        tests:
+          - not_null
+          - positive_values
+      - name: is_online_order
+        description: "Flag indicating if order was placed online (0=offline, 1=online)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
       - name: order_status_description
         tests:
           - accepted_values:

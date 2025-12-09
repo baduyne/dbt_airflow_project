@@ -26,8 +26,8 @@ daily as (
       sum(case when order_channel = 'Online' then 1 else 0 end) as online_orders,
       sum(case when order_channel = 'Offline' then 1 else 0 end) as offline_orders,
       sum(case when has_discount = 1 then line_total else 0 end) as discounted_revenue,
-      extract(year from cast(order_date as date)) as year,
-      extract(month from cast(order_date as date)) as month
+      YEAR(order_date) as year,
+      MONTH(order_date) as month
     from sales
     group by cast(order_date as date)
 )
@@ -45,4 +45,3 @@ select
   offline_orders,
   round(discounted_revenue,2) as discounted_revenue
 from daily
-order by day desc
