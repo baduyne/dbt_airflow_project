@@ -2,6 +2,7 @@
 
 ![DBT CI](https://github.com/baduyne/dbt-airflow-dataops/workflows/DBT%20CI%20Pipeline/badge.svg)
 ![Python Quality](https://github.com/baduyne/dbt-airflow-dataops/workflows/Python%20Code%20Quality/badge.svg)
+![Deploy Pipeline](https://github.com/baduyne/dbt-airflow-dataops/workflows/Deploy%20Pipeline/badge.svg)
 
 
 # DBT and Airflow Data Pipeline Project
@@ -392,6 +393,29 @@ We use containers for several important reasons:
    - Never commit sensitive credentials
    - Use environment variables for secrets
    - Regularly update dependencies
+
+## Deployment Runbook
+
+### Environment Strategy
+- **Development (Dev)**:
+  - Trigger: Push to `develop` branch.
+  - Action: Deploys changes to the development schema/database.
+  - Verification: Runs all tests against the dev environment.
+
+- **Production (Prod)**:
+  - Trigger: Push to `main` branch.
+  - Action: Deploys changes to the production schema/database.
+  - Backup: Critical for production data integrity.
+  - Verification: rigorous testing post-deployment.
+
+### Rollback Procedures
+In case of a deployment failure in Production:
+1. **Automated Rollback**: The system detects failure in the `deploy` job and triggers the `rollback` job.
+   - This job simulates reverting to the last known stable state.
+2. **Manual Rollback**:
+   - Revert the git commit that caused the failure: `git revert <commit-hash>`
+   - Push the revert to `main`.
+   - The deployment pipeline will run again with the reverted code, restoring the system.
 
 ## Troubleshooting
 
