@@ -59,6 +59,37 @@ jobs:
           cd dbt
           dbt deps
 
+      - name: Create profiles.yml
+        run: |
+          cd dbt
+          cat <<EOF > profiles.yml
+          dbt_airflow_project:
+            target: dev
+            outputs:
+              dev:
+                type: sqlserver
+                driver: 'ODBC Driver 17 for SQL Server'
+                server: ${{ secrets.DBT_HOST || 'localhost' }}
+                port: ${{ secrets.DBT_PORT || 1433 }}
+                database: AdventureWorks2014
+                schema: dbo
+                user: ${{ secrets.DBT_USER || 'sa' }}
+                password: ${{ secrets.DBT_PASSWORD || 'YourStrong@Passw0rd' }}
+                encrypt: false 
+                trust_cert: true
+              prod:
+                type: sqlserver
+                driver: 'ODBC Driver 17 for SQL Server'
+                server: ${{ secrets.DBT_HOST || 'localhost' }}
+                port: ${{ secrets.DBT_PORT || 1433 }}
+                database: AdventureWorks2014
+                schema: dbo
+                user: ${{ secrets.DBT_USER || 'sa' }}
+                password: ${{ secrets.DBT_PASSWORD || 'YourStrong@Passw0rd' }}
+                encrypt: false
+                trust_cert: true
+          EOF
+
       - name: Run DBT models
         run: |
           cd dbt
