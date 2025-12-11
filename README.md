@@ -424,3 +424,19 @@ For additional support:
 - Check the project issues
 - Contact the development team
 - Refer to DBT and Airflow documentation
+
+## Monitoring Dashboard (Bonus Feature)
+As part of the bonus features, we have integrated **Grafana** to monitor the Airflow pipeline metrics.
+
+### Accessing the Dashboard
+- **URL**: [http://localhost:3000](http://localhost:3000)
+- **Credentials**:
+  - **Username**: `admin`
+  - **Password**: `admin`
+- **Dashboards**: Go to `Dashboards` -> `Browse` -> `Airflow Pipeline Metrics`.
+
+### Metrics Visualization
+The dashboard visualizes:
+- **DAG Runs Over Time**: Historical view of pipeline executions.
+- **DAG Run Status**: Current counts of Success, Failed, and Running DAGs.
+- **Task Durations**: (Optional) Average time taken for tasks to complete.
