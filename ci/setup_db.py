@@ -45,6 +45,14 @@ def setup_database():
             print(f"Schema {schema} created.")
         except Exception:
             pass # Schema might exist
+
+    # Types (mock) - Create BEFORE tables that use them
+    print("Creating Types...")
+    try:
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sys.types WHERE name = 'NameStyle') CREATE TYPE dbo.NameStyle FROM bit")
+        print("Type dbo.NameStyle created.")
+    except Exception as e:
+        print(f"Type creation failed: {e}")
             
     # Table: Person.Person
     print("Creating Person.Person...")
