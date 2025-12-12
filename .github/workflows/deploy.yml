@@ -23,6 +23,15 @@ jobs:
       environment: ${{ steps.env.outputs.environment }}
       target: ${{ steps.env.outputs.target }}
     
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports:
+          - 1433:1433
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: YourStrong@Passw0rd
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
