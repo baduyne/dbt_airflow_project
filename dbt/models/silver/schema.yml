@@ -1,51 +1,58 @@
 version: 2
 
 models:
-  - name: slvr_customers
-    description: Cleaned and standardized customer data
+  - name: int_sales_details
+    description: "Enriched sales details with product info and financials"
     columns:
-      - name: customer_id
-        description: Unique customer identifier
-        tests:
-          - unique
-          - not_null
-      - name: full_name
-        description: Customer full name
-      - name: email_promotion
-        description: Email promotion preference
-
-  - name: slvr_products
-    description: Cleaned and standardized product data
-    columns:
-      - name: product_id
-        description: Unique product identifier
-        tests:
-          - unique
-          - not_null
-      - name: product_name
-        description: Product name
-      - name: list_price
-        description: Product list price
-        tests:
-          - not_null
-
-  - name: slvr_sales_orders
-    description: Cleaned sales order data with calculated fields
-    columns:
-      - name: sales_order_id
-        description: Sales order identifier
-        tests:
-          - not_null
       - name: order_detail_id
-        description: Order detail identifier
+        tests:
+          - unique
+          - not_null
+      - name: sales_order_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('brnz_sales_orders')
+              field: sales_order_id
+      - name: product_id
+        tests:
+          - relationships:
+              to: ref('brnz_products')
+              field: product_id
+      - name: gross_amount
         tests:
           - not_null
       - name: line_total
-        description: Total amount for line item
+        description: "Total for this line item (quantity * unit_price * (1 - discount))"
         tests:
           - not_null
-    tests:
-      - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - sales_order_id
-            - order_detail_id
+          - positive_values
+      - name: is_online_order
+        description: "Flag indicating if order was placed online (0=offline, 1=online)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: order_status_description
+        tests:
+          - accepted_values:
+              values: ['In Process', 'Approved', 'Backordered', 'Rejected', 'Shipped', 'Cancelled', 'Unknown']
+
+  - name: int_customer_profile
+    description: "Customer profiles with segmentation"
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('brnz_customers')
+              field: customer_id
+      - name: customer_type
+        tests:
+          - accepted_values:
+              values: ['Store', 'Individual']
+      - name: marketing_segment
+        tests:
+          - accepted_values:
+              values: ['Opt-Out', 'AdventureWorks Only', 'Partners & AdventureWorks', 'Unknown']

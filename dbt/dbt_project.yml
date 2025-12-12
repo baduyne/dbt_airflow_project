@@ -15,6 +15,7 @@ target-path: "target"
 clean-targets:
   - "target"
   - "dbt_packages"
+  - "logs"
 
 models:
   dbt_sqlserver_project:
@@ -25,5 +26,5 @@ models:
       +materialized: table
       +schema: silver
     gold:
-      +materialized: table 
+      +materialized: table
       +schema: gold

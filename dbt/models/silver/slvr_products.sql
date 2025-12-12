@@ -10,24 +10,24 @@ with bronze_products as (
 
 cleaned as (
     select
-        ProductID as product_id,
-        ProductName as product_name,
-        ProductNumber as product_number,
+        product_id,
+        product_name,
+        product_number,
         coalesce(Color, 'N/A') as color,
-        StandardCost as standard_cost,
-        ListPrice as list_price,
+        standard_cost,
+        list_price,
         coalesce(Size, 'N/A') as size,
         coalesce(Weight, 0) as weight,
-        ProductLine as product_line,
-        Class as class,
-        Style as style,
-        ProductSubcategoryID as subcategory_id,
-        coalesce(SubcategoryName, 'Uncategorized') as subcategory_name,
-        ProductCategoryID as category_id,
-        SellStartDate as sell_start_date,
-        SellEndDate as sell_end_date,
-        case 
-            when DiscontinuedDate is not null then 1
+        product_line,
+        product_class as class,
+        product_style as style,
+        product_subcategory_id as subcategory_id,
+        coalesce(subcategory_name, 'Uncategorized') as subcategory_name,
+        product_category_id as category_id,
+        sell_start_date,
+        sell_end_date,
+        case
+            when discontinued_date is not null then 1
             else 0
         end as is_discontinued,
         last_modified_date

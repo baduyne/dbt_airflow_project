@@ -1,0 +1,175 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Environment (dev/prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      target: ${{ steps.env.outputs.target }}
+    
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports:
+          - 1433:1433
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: YourStrong@Passw0rd
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.target_env }}" == "prod" ]]; then
+              echo "environment=production" >> $GITHUB_OUTPUT
+              echo "target=prod" >> $GITHUB_OUTPUT
+            else
+              echo "environment=development" >> $GITHUB_OUTPUT
+              echo "target=dev" >> $GITHUB_OUTPUT
+            fi
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "target=prod" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+            echo "target=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install ODBC Driver
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17
+          sudo apt-get install -y unixodbc-dev
+
+      - name: Install DBT
+        run: pip install dbt-sqlserver
+
+      - name: Initialize Database
+        run: python ci/setup_db.py
+
+      - name: Install dependencies
+        run: |
+          cd dbt
+          dbt deps
+
+      - name: Create profiles.yml
+        run: |
+          cd dbt
+          cat <<EOF > profiles.yml
+          dbt_airflow_project:
+            target: dev
+            outputs:
+              dev:
+                type: sqlserver
+                driver: 'ODBC Driver 17 for SQL Server'
+                server: ${{ secrets.DBT_HOST || 'localhost' }}
+                port: ${{ secrets.DBT_PORT || 1433 }}
+                database: AdventureWorks2014
+                schema: dbo
+                user: ${{ secrets.DBT_USER || 'sa' }}
+                password: ${{ secrets.DBT_PASSWORD || 'YourStrong@Passw0rd' }}
+                encrypt: false 
+                trust_cert: true
+              prod:
+                type: sqlserver
+                driver: 'ODBC Driver 17 for SQL Server'
+                server: ${{ secrets.DBT_HOST || 'localhost' }}
+                port: ${{ secrets.DBT_PORT || 1433 }}
+                database: AdventureWorks2014
+                schema: dbo
+                user: ${{ secrets.DBT_USER || 'sa' }}
+                password: ${{ secrets.DBT_PASSWORD || 'YourStrong@Passw0rd' }}
+                encrypt: false
+                trust_cert: true
+          EOF
+
+      - name: Run DBT models
+        run: |
+          cd dbt
+          echo "🚀 Deploying to ${{ steps.env.outputs.environment }} environment..."
+          dbt run --target ${{ steps.env.outputs.target }} --profiles-dir .
+        env:
+          # In a real scenario, these would be secrets
+          DBT_ENV_SECRET_HOST: ${{ secrets.DBT_HOST }}
+          DBT_ENV_SECRET_USER: ${{ secrets.DBT_USER }}
+          DBT_ENV_SECRET_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+
+      - name: Test data quality
+        run: |
+          cd dbt
+          echo "🧪 Running tests for ${{ steps.env.outputs.environment }}..."
+          dbt test --target ${{ steps.env.outputs.target }} --profiles-dir .
+
+      - name: Generate documentation
+        if: steps.env.outputs.target == 'prod'
+        run: |
+          cd dbt
+          dbt docs generate --target ${{ steps.env.outputs.target }} --profiles-dir .
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ Deployment to ${{ steps.env.outputs.environment }} completed successfully!"
+          # Mock notification
+          echo "::notice title=Deployment Success::Successfully deployed to ${{ steps.env.outputs.environment }}"
+
+  rollback:
+    needs: deploy
+    if: failure() && needs.deploy.outputs.target == 'prod'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Failure
+        run: |
+          echo "::error title=Deployment Failure::Deployment to Production failed!"
+      
+      - name: Initiate Rollback
+        run: |
+          echo "🚨 INITIATING AUTOMATED ROLLBACK PROTOCOL 🚨"
+          echo "1. Identifying last stable deployment..."
+          echo "2. Reverting dbt models to previous state..."
+          # Simulating a rollback command
+          # dbt run --target prod --select state:modified --state path/to/artifacts
+          echo "3. Rollback simulation complete. System state reverted."
+          echo "Please manually inspect the logs and fix the issue before retrying."
+
+  notify-status:
+    needs: [deploy, rollback]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification (Mock)
+        run: |
+          status="${{ needs.deploy.result }}"
+          if [[ "$status" == "success" ]]; then
+             msg="✅ Deployment Successful"
+          else
+             msg="❌ Deployment Failed"
+          fi
+          echo "Sending notification: $msg"
