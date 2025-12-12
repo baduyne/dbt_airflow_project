@@ -71,6 +71,10 @@ jobs:
       - name: Install DBT
         run: pip install dbt-sqlserver
 
+      - name: Initialize Database
+        run: |
+          python -c "import pyodbc; conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=127.0.0.1,1433;UID=sa;PWD=YourStrong@Passw0rd;TrustServerCertificate=yes', autocommit=True); conn.execute('CREATE DATABASE AdventureWorks2014');"
+
       - name: Install dependencies
         run: |
           cd dbt
