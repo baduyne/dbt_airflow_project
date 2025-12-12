@@ -125,8 +125,8 @@ def setup_database():
         )
     """)
     cursor.execute("""
-        INSERT INTO Production.Product (ProductID, Name, ProductNumber, MakeFlag, FinishedGoodsFlag, StandardCost, ListPrice, ModifiedDate) 
-        VALUES (1, 'Adjustable Race', 'AR-5381', 0, 0, 0.00, 0.00, GETDATE())
+        INSERT INTO Production.Product (ProductID, Name, ProductNumber, MakeFlag, FinishedGoodsFlag, StandardCost, ListPrice, DaysToManufacture, ReorderPoint, SafetyStockLevel, SellStartDate, ModifiedDate) 
+        VALUES (1, 'Adjustable Race', 'AR-5381', 0, 0, 0.00, 0.00, 1, 750, 1000, GETDATE(), GETDATE())
     """)
 
     # Table: Production.ProductSubcategory
